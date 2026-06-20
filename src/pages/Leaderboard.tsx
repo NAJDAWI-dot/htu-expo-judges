@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy, Download } from 'lucide-react';
+import { ArrowLeft, Trophy, Download, MessageSquare, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface ProjectData {
@@ -24,6 +24,7 @@ export const Leaderboard: React.FC = () => {
   const [phases, setPhases] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [activePhase, setActivePhase] = useState<number>(1);
+  const [selectedNotes, setSelectedNotes] = useState<{title: string, notes: string, x: number, y: number} | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,6 +80,7 @@ export const Leaderboard: React.FC = () => {
         totalScore,
         avgScore: parseFloat(avgScore),
         evalCount: projectEvals.length,
+        hasNotes: projectEvals.some(e => e.comments && e.comments.trim().length > 0),
         comments: projectEvals.map(e => `[Comm ${e.committeeNumber}]: ${e.comments}`).join(' | ')
       };
     }).sort((a, b) => b.avgScore - a.avgScore);
@@ -203,6 +205,7 @@ export const Leaderboard: React.FC = () => {
             <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
               <th style={{ padding: '1rem' }}>Rank</th>
               <th style={{ padding: '1rem' }}>Project Title</th>
+              <th style={{ padding: '1rem' }}>Notes</th>
               <th style={{ padding: '1rem' }}>Evals</th>
               <th style={{ padding: '1rem' }}>Avg Score</th>
             </tr>
@@ -214,13 +217,45 @@ export const Leaderboard: React.FC = () => {
                   #{index + 1}
                 </td>
                 <td style={{ padding: '1rem' }}>{item.title}</td>
+                <td style={{ padding: '1rem' }}>
+                  <div 
+                    title={item.hasNotes ? "Click to view notes" : "No notes available"}
+                    onClick={(e) => {
+                      if (item.hasNotes) {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setSelectedNotes({ 
+                          title: item.title, 
+                          notes: item.comments,
+                          x: rect.left + rect.width / 2,
+                          y: rect.bottom
+                        });
+                      }
+                    }}
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '0.25rem',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      cursor: item.hasNotes ? 'pointer' : 'default',
+                      background: item.hasNotes ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                      color: item.hasNotes ? '#eab308' : '#22c55e',
+                      boxShadow: item.hasNotes ? '0 0 8px rgba(234, 179, 8, 0.5)' : '0 0 8px rgba(34, 197, 94, 0.5)'
+                    }}
+                  >
+                    <MessageSquare size={14} /> 
+                    Notes
+                  </div>
+                </td>
                 <td style={{ padding: '1rem' }}>{item.evalCount}</td>
                 <td style={{ padding: '1rem', fontWeight: 'bold', fontSize: '1.125rem' }}>{item.avgScore}</td>
               </tr>
             ))}
             {leaderboard.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   No evaluations yet.
                 </td>
               </tr>
@@ -228,6 +263,61 @@ export const Leaderboard: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {selectedNotes && (
+        <>
+          <div 
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9998 }} 
+            onClick={() => setSelectedNotes(null)} 
+          />
+          <div style={{
+            position: 'fixed',
+            top: `${selectedNotes.y + 10}px`,
+            left: `${selectedNotes.x}px`,
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            background: 'rgba(30, 41, 59, 0.95)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '12px',
+            padding: '1rem',
+            width: 'max-content',
+            maxWidth: '300px',
+            maxHeight: '300px',
+            overflowY: 'auto',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            color: 'white',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{ 
+              position: 'absolute', 
+              top: '-6px', 
+              left: '50%', 
+              transform: 'translateX(-50%) rotate(45deg)', 
+              width: '12px', 
+              height: '12px', 
+              background: 'rgba(30, 41, 59, 0.95)', 
+              borderLeft: '1px solid rgba(255,255,255,0.1)', 
+              borderTop: '1px solid rgba(255,255,255,0.1)' 
+            }} />
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <strong style={{ color: 'var(--accent-primary)', fontSize: '0.875rem' }}>{selectedNotes.title}</strong>
+              <button onClick={() => setSelectedNotes(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}>
+                <X size={14} />
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+              {selectedNotes.notes.split(' | ').map((note, i) => (
+                <div key={i} style={{ borderBottom: i !== selectedNotes.notes.split(' | ').length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingBottom: i !== selectedNotes.notes.split(' | ').length - 1 ? '0.5rem' : 0 }}>
+                  {note.trim() === '' ? <em style={{ color: 'var(--text-secondary)' }}>No written notes</em> : note}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

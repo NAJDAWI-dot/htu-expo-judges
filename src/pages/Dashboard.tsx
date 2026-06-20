@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, getDocs } from 'firebase/f
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, LogOut, CheckCircle2, ChevronRight, Search } from 'lucide-react';
+import { ShieldCheck, LogOut, CheckCircle2, ChevronRight, Search, MessageSquare } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -26,7 +26,7 @@ const committeeMapping: Record<string, string[]> = {
 export const Dashboard: React.FC = () => {
   const { committeeNumber, logout } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [evaluations, setEvaluations] = useState<Record<string, boolean>>({});
+  const [evaluations, setEvaluations] = useState<Record<string, any>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
@@ -78,11 +78,11 @@ export const Dashboard: React.FC = () => {
     if (committeeNumber) {
       const qEvals = query(collection(db, 'evaluations'));
       const unsubEvals = onSnapshot(qEvals, (snapshot) => {
-        const evals: Record<string, boolean> = {};
+        const evals: Record<string, any> = {};
         snapshot.docs.forEach(docSnap => {
           const data = docSnap.data();
           if (data.committeeNumber === committeeNumber) {
-            evals[data.projectId] = true;
+            evals[data.projectId] = data;
           }
         });
         setEvaluations(evals);
@@ -176,10 +176,30 @@ export const Dashboard: React.FC = () => {
                 </div>
               )}
               
-              <div style={{ marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className={`badge ${isEvaluated ? 'badge-success' : 'badge-pending'}`}>
                   {isEvaluated ? 'Evaluated' : 'Pending'}
                 </span>
+                
+                <div 
+                  className="notes-indicator"
+                  title={isEvaluated && isEvaluated.comments?.trim() ? "Notes included" : "No notes"}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.25rem',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    background: (isEvaluated && isEvaluated.comments?.trim()) ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                    color: (isEvaluated && isEvaluated.comments?.trim()) ? '#eab308' : '#22c55e',
+                    boxShadow: (isEvaluated && isEvaluated.comments?.trim()) ? '0 0 8px rgba(234, 179, 8, 0.5)' : '0 0 8px rgba(34, 197, 94, 0.5)'
+                  }}
+                >
+                  <MessageSquare size={14} /> 
+                  Notes
+                </div>
               </div>
               
               <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{project.title}</h3>

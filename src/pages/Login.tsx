@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ChevronRight, Users } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const Login: React.FC = () => {
@@ -20,11 +20,9 @@ export const Login: React.FC = () => {
     <div className="app-container" style={{ maxWidth: '600px', paddingTop: '4rem' }}>
       <div className="text-center mb-8 animate-fade-in">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-          <div style={{ background: 'rgba(59, 130, 246, 0.2)', padding: '1rem', borderRadius: '50%' }}>
-            <Users size={48} color="var(--accent-primary)" />
-          </div>
+          <img src={`${import.meta.env.BASE_URL}htu-logo.svg`} alt="HTU Logo" style={{ height: '80px', objectFit: 'contain' }} />
         </div>
-        <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Judges Portal</h1>
+        <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>HTU Design Expo</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Enter your committee number to view assigned projects</p>
       </div>
 
